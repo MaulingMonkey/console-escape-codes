@@ -4,7 +4,7 @@
 name                = "maulingmonkey-console-escape-codes"
 version             = "0.0.0-git"
 edition             = "2018"
-repository          = "https://github.com/MaulingMonkey/maulingmonkey-console-escape-codes"
+repository          = "https://github.com/MaulingMonkey/console-escape-codes"
 authors             = ["MaulingMonkey <git@maulingmonkey.com>"]
 readme              = "Readme.md"
 license             = "MIT OR Apache-2.0"
