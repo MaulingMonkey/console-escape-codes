@@ -118,7 +118,7 @@ pub struct Style {
     pub foreground:         Option<Color>,
     pub background:         Option<Color>,
     pub underline_color:    Option<Color>,
-    _non_exhaustive:        (),
+    #[doc(hidden)] pub _non_exhaustive: (),
 }
 
 impl Display for Style {
