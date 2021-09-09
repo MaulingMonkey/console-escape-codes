@@ -109,6 +109,33 @@ pub fn erase_in_line(pos: impl BeforeAfterAllCursor) -> impl Display { display!(
 
 
 
+#[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Style {
+    pub reset:              bool,
+    pub bold:               Option<bool>,
+    pub underline:          Option<bool>,
+    pub negative:           Option<bool>,
+    pub foreground:         Option<Color>,
+    pub background:         Option<Color>,
+    pub underline_color:    Option<Color>,
+    _non_exhaustive:        (),
+}
+
+impl Display for Style {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if self.reset                                           { write!(f, "{}", sgr_default())?; }
+        if let Some(bold)       = self.bold                     { write!(f, "{}", sgr_bold(bold))?; }
+        if let Some(underline)  = self.underline                { write!(f, "{}", sgr_underline(underline))?; }
+        if let Some(negative)   = self.negative                 { write!(f, "{}", sgr_negative(negative))?; }
+        if let Some(foreground) = self.foreground.as_ref()      { write!(f, "{}", sgr_foreground_color(foreground.clone()))?; }
+        if let Some(background) = self.background.as_ref()      { write!(f, "{}", sgr_background_color(background.clone()))?; }
+        if let Some(underlinec) = self.underline_color.as_ref() { write!(f, "{}", sgr_underline_color(underlinec.clone()))?; }
+        Ok(())
+    }
+}
+
+
+
 // Text Formatting
 // https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences#text-formatting
 
@@ -116,7 +143,6 @@ pub fn sgr_default  () -> impl Display { "\x1B[0m" }
 pub fn sgr_bold     (enable: bool) -> impl Display { display!("\x1B[{}m", if enable { "1" } else { "22" }) }
 pub fn sgr_underline(enable: bool) -> impl Display { display!("\x1B[{}m", if enable { "4" } else { "24" }) }
 pub fn sgr_negative (enable: bool) -> impl Display { display!("\x1B[{}m", if enable { "7" } else { "27" }) }
-// TODO: 3/4-bit colors
 
 
 
@@ -125,8 +151,95 @@ pub fn sgr_negative (enable: bool) -> impl Display { display!("\x1B[{}m", if ena
 
 pub fn sgr_foreground_rgb(rgb: impl Into<RGB>) -> impl Display { let RGB(r,g,b) = rgb.into(); display!("\x1B[38;2;{};{};{}m", r, g, b) }
 pub fn sgr_background_rgb(rgb: impl Into<RGB>) -> impl Display { let RGB(r,g,b) = rgb.into(); display!("\x1B[48;2;{};{};{}m", r, g, b) }
-pub fn sgr_foreground_256(pal: u8) -> impl Display { display!("\x1B[38;5;{}m", pal) }
-pub fn sgr_background_256(pal: u8) -> impl Display { display!("\x1B[48;5;{}m", pal) }
+pub fn sgr_underline_rgb (rgb: impl Into<RGB>) -> impl Display { let RGB(r,g,b) = rgb.into(); display!("\x1B[58;2;{};{};{}m", r, g, b) }
+
+pub fn sgr_foreground_256(pal: impl Into<Palette>) -> impl Display { let pal = pal.into().0; display!("\x1B[38;5;{}m", pal) }
+pub fn sgr_background_256(pal: impl Into<Palette>) -> impl Display { let pal = pal.into().0; display!("\x1B[48;5;{}m", pal) }
+pub fn sgr_underline_256 (pal: impl Into<Palette>) -> impl Display { let pal = pal.into().0; display!("\x1B[58;5;{}m", pal) }
+
+pub fn sgr_foreground_default() -> impl Display { display!("\x1B[39m") }
+pub fn sgr_background_default() -> impl Display { display!("\x1B[49m") }
+pub fn sgr_underline_default () -> impl Display { display!("\x1B[59m") }
+
+pub fn sgr_foreground_color(color: impl Into<Color>) -> impl Display {
+    let color = color.into();
+    crate::DisplayFn(move |f| {
+        match color {
+            Color::RGB(RGB(r,g,b))              => write!(f, "\x1B[38;2;{};{};{}m", r, g, b),
+            Color::Palette(Palette(pal))        => write!(f, "\x1B[38;5;{}m", pal),
+            Color::Default                      => write!(f, "\x1B[39m"),
+        }
+    })
+}
+
+pub fn sgr_background_color(color: impl Into<Color>) -> impl Display {
+    let color = color.into();
+    crate::DisplayFn(move |f| {
+        match color {
+            Color::RGB(RGB(r,g,b))              => write!(f, "\x1B[48;2;{};{};{}m", r, g, b),
+            Color::Palette(Palette(pal))        => write!(f, "\x1B[48;5;{}m", pal),
+            Color::Default                      => write!(f, "\x1B[49m"),
+        }
+    })
+}
+
+pub fn sgr_underline_color(color: impl Into<Color>) -> impl Display {
+    let color = color.into();
+    crate::DisplayFn(move |f| {
+        match color {
+            Color::RGB(RGB(r,g,b))              => write!(f, "\x1B[58;2;{};{};{}m", r, g, b),
+            Color::Palette(Palette(pal))        => write!(f, "\x1B[58;5;{}m", pal),
+            Color::Default                      => write!(f, "\x1B[59m"),
+        }
+    })
+}
+
+
+
+#[repr(transparent)] #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)] pub struct Palette(pub u8);
+
+impl From<u8> for Palette { fn from(value: u8) -> Self { Self(value) } }
+
+impl Palette {
+    pub const BLACK             : Palette = Palette(0);
+    pub const RED               : Palette = Palette(1);
+    pub const GREEN             : Palette = Palette(2);
+    pub const YELLOW            : Palette = Palette(3);
+    pub const BLUE              : Palette = Palette(4);
+    pub const MAGENTA           : Palette = Palette(5);
+    pub const CYAN              : Palette = Palette(6);
+    pub const WHITE             : Palette = Palette(7);
+
+    pub const BRIGHT_BLACK      : Palette = Palette(8);
+    pub const GRAY              : Palette = Self::BRIGHT_BLACK;
+    pub const GREY              : Palette = Self::BRIGHT_BLACK;
+    pub const BRIGHT_RED        : Palette = Palette(9);
+    pub const BRIGHT_GREEN      : Palette = Palette(10);
+    pub const BRIGHT_YELLOW     : Palette = Palette(11);
+    pub const BRIGHT_BLUE       : Palette = Palette(12);
+    pub const BRIGHT_MAGENTA    : Palette = Palette(13);
+    pub const BRIGHT_CYAN       : Palette = Palette(14);
+    pub const BRIGHT_WHTIE      : Palette = Palette(15);
+}
+
+
+
+#[non_exhaustive] #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)] pub enum Color {
+    Default,
+    Palette(Palette),
+    RGB(RGB),
+}
+
+impl Color {
+    pub const fn default() -> Self { Color::Default }
+}
+
+impl Default for Color {
+    fn default() -> Self { Color::Default }
+}
+
+impl From<RGB>      for Color { fn from(value: RGB      ) -> Self { Self::RGB(value) } }
+impl From<Palette>  for Color { fn from(value: Palette  ) -> Self { Self::Palette(value) } }
 
 
 
