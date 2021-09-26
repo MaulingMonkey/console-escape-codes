@@ -109,7 +109,7 @@ pub fn erase_in_line(pos: impl BeforeAfterAllCursor) -> impl Display { display!(
 
 
 
-#[derive(Clone, Default, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Style {
     pub reset:              bool,
     pub bold:               Option<bool>,
@@ -132,6 +132,32 @@ impl Display for Style {
         if let Some(underlinec) = self.underline_color.as_ref() { write!(f, "{}", sgr_underline_color(underlinec.clone()))?; }
         Ok(())
     }
+}
+
+impl Default for Style {
+    fn default() -> Self {
+        Self::default()
+    }
+}
+
+impl Style {
+    pub const fn default() -> Self {
+        Self {
+            reset:              false,
+            bold:               None,
+            underline:          None,
+            negative:           None,
+            foreground:         None,
+            background:         None,
+            underline_color:    None,
+            _non_exhaustive:    (),
+        }
+    }
+}
+
+#[test] fn style_default() {
+    let _ = Style::default();
+    let _ : Style = Default::default();
 }
 
 
