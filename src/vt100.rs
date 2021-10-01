@@ -41,11 +41,11 @@ pub fn cursor_next_line(rows: impl Unsigned) -> impl Display { display!("\x1B[{}
 /// Move cursor to start of line `r` rows up
 pub fn cursor_previous_line(rows: impl Unsigned) -> impl Display { display!("\x1B[{}F", rows) }
 
-/// Move cursor to row `r`
-pub fn cursor_horizontal_absolute(row: impl Into<RowNo>) -> impl Display { let row = row.into(); display!("\x1B[{}G", row) }
+/// Move cursor to column `column`
+pub fn cursor_horizontal_absolute(column: impl Into<ColNo>) -> impl Display { let column = column.into(); display!("\x1B[{}G", column) }
 
-/// Move cursor to column `c`
-pub fn vertical_position_absolute(column: impl Into<ColNo>) -> impl Display { let column = column.into(); display!("\x1B[{}d", column) }
+/// Move cursor to row `row`
+pub fn vertical_position_absolute(row: impl Into<RowNo>) -> impl Display { let row = row.into(); display!("\x1B[{}d", row) }
 
 /// Move cursor to row `r`, column `c`
 pub fn cursor_position(pos: impl Into<RowColNo>) -> impl Display { let RowColNo(row, column) = pos.into(); display!("\x1B[{};{}H", row, column) }
